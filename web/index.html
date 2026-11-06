@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f7f6f2">
+  <title>Pockito — Keuangan lebih terkendali</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <div id="toast" class="toast" role="status"></div>
+  <section id="auth-screen" class="auth-screen">
+    <div class="auth-brand"><span class="brand-mark">p.</span><span>Pockito</span></div>
+    <div class="auth-card">
+      <div class="eyebrow">PERSONAL FINANCE WORKSPACE</div>
+      <h1>Uangmu punya arah.<br><span>Hidup terasa lega.</span></h1>
+      <p class="muted">Catat, pahami, dan kelola keuangan dalam satu tempat.</p>
+      <div class="auth-tabs"><button class="tab active" data-auth-mode="login">Masuk</button><button class="tab" data-auth-mode="signup">Daftar</button></div>
+      <form id="auth-form" class="stack">
+        <label id="name-wrap" class="field hidden">Nama panggilan<input id="auth-name" autocomplete="name" placeholder="Nama kamu"></label>
+        <label class="field">Email<input id="auth-email" type="email" autocomplete="email" required placeholder="nama@email.com"></label>
+        <label class="field">Password<input id="auth-password" type="password" autocomplete="current-password" minlength="6" required placeholder="Minimal 6 karakter"></label>
+        <button class="btn primary full" id="auth-submit">Masuk ke Pockito <span>→</span></button>
+      </form>
+      <p class="tiny muted" id="auth-hint">Gunakan akun Pockito Workspace kamu.</p>
+    </div>
+    <div class="auth-foot">Dibuat untuk keputusan kecil yang lebih baik.</div>
+  </section>
+
+  <div id="app-shell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="side-brand"><span class="brand-mark">p.</span><span>Pockito</span></div>
+      <div class="workspace-box"><span class="tiny muted">WORKSPACE AKTIF</span><select id="workspace-select" aria-label="Pilih workspace"></select><span id="role-label" class="tiny muted"></span></div>
+      <nav id="main-nav" class="main-nav">
+        <button class="nav-item active" data-page="overview"><span>◫</span> Ringkasan</button>
+        <button class="nav-item" data-page="transactions"><span>↕</span> Transaksi</button>
+        <button class="nav-item" data-page="wallets"><span>▣</span> Dompet</button>
+        <button class="nav-item" data-page="categories"><span>◇</span> Kategori</button>
+        <div class="nav-caption">PERENCANAAN</div>
+        <button class="nav-item" data-page="budgets"><span>▤</span> Anggaran</button>
+        <button class="nav-item" data-page="goals"><span>◎</span> Target dana</button>
+        <div class="nav-caption">KOMITMEN & ASET</div>
+        <button class="nav-item" data-page="installments"><span>▦</span> Cicilan & kartu</button>
+        <button class="nav-item" data-page="debts"><span>⇄</span> Utang & piutang</button>
+        <button class="nav-item" data-page="investments"><span>↗</span> Investasi</button>
+        <button class="nav-item" data-page="recurring"><span>⟳</span> Transaksi rutin</button>
+      </nav>
+      <div class="sidebar-bottom"><div class="user-mini"><div class="avatar" id="user-avatar">P</div><div><strong id="user-name">Pengguna</strong><small id="user-email"></small></div></div><button id="signout-btn" class="btn ghost full">Keluar</button></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar"><div><div class="eyebrow" id="page-eyebrow">OVERVIEW</div><h2 id="page-title">Ringkasan keuangan</h2></div><div class="top-actions"><span class="today-label" id="today-label"></span><button id="quick-add" class="btn primary">＋ Catat transaksi</button><button id="mobile-menu" class="icon-btn" aria-label="Buka menu">☰</button></div></header>
+      <section id="page-content" class="page-content"></section>
+      <footer class="app-footer">Pockito Workspace <span>•</span> Catatan kecil, keuangan terkendali.</footer>
+    </main>
+  </div>
+
+  <dialog id="transaction-dialog" class="modal">
+    <form id="transaction-form" class="modal-card">
+      <div class="modal-head"><div><div class="eyebrow">CATAT KEUANGAN</div><h3>Transaksi baru</h3></div><button type="button" class="icon-btn" data-close="transaction-dialog">×</button></div>
+      <div class="segmented"><button type="button" class="active" data-kind="expense">Pengeluaran</button><button type="button" data-kind="income">Pemasukan</button></div>
+      <label class="field">Nama transaksi<input id="tx-title" required maxlength="200" placeholder="Contoh: Belanja bulanan"></label>
+      <div class="form-grid"><label class="field">Nominal (Rp)<input id="tx-amount" type="number" min="1" step="1" required placeholder="0"></label><label class="field">Tanggal & waktu<input id="tx-date" type="datetime-local" required></label></div>
+      <div class="form-grid"><label class="field">Dompet<select id="tx-wallet" required></select></label><label class="field">Kategori<select id="tx-category"><option value="">Tanpa kategori</option></select></label></div>
+      <label class="field">Catatan <textarea id="tx-notes" rows="2" placeholder="Opsional"></textarea></label>
+      <div class="modal-actions"><button type="button" class="btn ghost" data-close="transaction-dialog">Batal</button><button class="btn primary" id="tx-submit">Simpan transaksi</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="wallet-dialog" class="modal"><form id="wallet-form" class="modal-card"><div class="modal-head"><div><div class="eyebrow">PENGELOLAAN DOMPET</div><h3>Tambah dompet</h3></div><button type="button" class="icon-btn" data-close="wallet-dialog">×</button></div><label class="field">Nama dompet<input id="wallet-name" required maxlength="80" placeholder="Contoh: BRI"></label><div class="form-grid"><label class="field">Jenis<select id="wallet-type"><option value="BANK">Bank</option><option value="CASH">Tunai</option><option value="E_WALLET">E-Wallet</option><option value="OTHER">Lainnya</option></select></label><label class="field">Saldo awal (Rp)<input id="wallet-opening" type="number" min="0" step="1" value="0"></label></div><label class="field">Keterangan<input id="wallet-label" maxlength="100" placeholder="Opsional"></label><div class="modal-actions"><button type="button" class="btn ghost" data-close="wallet-dialog">Batal</button><button class="btn primary">Simpan dompet</button></div></form></dialog>
+
+  <dialog id="category-dialog" class="modal"><form id="category-form" class="modal-card"><div class="modal-head"><div><div class="eyebrow">KATEGORI</div><h3>Tambah kategori</h3></div><button type="button" class="icon-btn" data-close="category-dialog">×</button></div><label class="field">Nama kategori<input id="category-name" required maxlength="80" placeholder="Contoh: Makan"></label><label class="field">Jenis kategori<select id="category-type"><option value="both">Pemasukan & pengeluaran</option><option value="expense">Pengeluaran</option><option value="income">Pemasukan</option></select></label><div class="modal-actions"><button type="button" class="btn ghost" data-close="category-dialog">Batal</button><button class="btn primary">Simpan kategori</button></div></form></dialog>
+</body>
+</html>
