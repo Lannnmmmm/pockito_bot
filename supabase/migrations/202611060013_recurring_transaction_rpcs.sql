@@ -170,7 +170,12 @@ begin
   if v_schedule.ends_on is not null and v_due_date > v_schedule.ends_on then
     raise exception 'Recurring schedule has ended before this period';
   end if;
-  if v_due_date > current_date then
+  select coalesce(s.timezone,'Asia/Jakarta') into v_timezone
+  from public.workspace_settings s
+  where s.workspace_id=p_workspace_id;
+  v_timezone := coalesce(v_timezone,'Asia/Jakarta');
+
+  if v_due_date > (now() at time zone v_timezone)::date then
     raise exception 'Recurring transaction is not due yet';
   end if;
 
@@ -202,11 +207,6 @@ begin
       raise exception 'Recurring category is missing or no longer compatible';
     end if;
   end if;
-
-  select coalesce(s.timezone,'Asia/Jakarta') into v_timezone
-  from public.workspace_settings s
-  where s.workspace_id=p_workspace_id;
-  v_timezone := coalesce(v_timezone,'Asia/Jakarta');
 
   v_idempotency_key := 'recurring:' || p_recurring_transaction_id::text || ':' || to_char(p_period_start,'YYYY-MM-DD');
 
