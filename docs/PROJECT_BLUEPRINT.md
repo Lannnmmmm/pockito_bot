@@ -232,6 +232,18 @@ Migration 0004 creates the planning, asset/liability, and recurring tables. Dire
 - These RPCs do not implement wallet transfers, asset movements, installment/debt payments, or goal/investment allocations. Those require dedicated atomic operations and remain future work.
 - Migration 0005 is committed but has not been executed against a Supabase project or runtime-tested.
 
+
+### Same-workspace wallet transfers (migration 0006)
+
+- `post_wallet_transfer` moves a positive amount between two distinct active wallets in the same workspace.
+- It checks the caller's workspace edit permission, validates both wallet records, locks wallet rows in stable ID order, and uses a workspace-scoped idempotency key.
+- One `transfer_groups` row, one `transfer_out` transaction, one `transfer_in` transaction, and two ledger entries are committed atomically.
+- The source ledger entry is negative and the destination ledger entry is positive for the same amount. Their combined effect inside the workspace is zero.
+- Transfers must be excluded from income/expense totals and category spending reports. Wallet balances still include their ledger movements.
+- Migration 0006 allows `transfer_groups.source_workspace_id` and `destination_workspace_id` to be equal. The same RPC does not support cross-workspace transfers.
+- Transfer reversal is not implemented yet. Do not use the income/expense reversal RPC to reverse a transfer; a dedicated paired-transfer reversal operation is required.
+- Migration 0006 is committed but has not been executed against Supabase or runtime-tested.
+
 ## 13. Engineering guardrails
 
 - Keep SQL changes in versioned migration files; do not rely on manual dashboard-only schema edits.
