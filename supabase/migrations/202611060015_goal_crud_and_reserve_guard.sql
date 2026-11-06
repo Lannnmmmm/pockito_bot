@@ -185,19 +185,23 @@ begin
     raise exception 'Only active goals can receive or release allocations';
   end if;
 
+  perform 1
+  from public.wallets w
+  where w.id = p_wallet_id
+    and w.workspace_id = p_workspace_id
+    and w.is_active = true
+  for update;
+  if not found then
+    raise exception 'Wallet not found, inactive, or outside this workspace';
+  end if;
+
   select w.opening_balance + coalesce(sum(le.signed_amount), 0)
     into v_wallet_balance
   from public.wallets w
   left join public.ledger_entries le
     on le.wallet_id = w.id and le.workspace_id = p_workspace_id
-  where w.id = p_wallet_id
-    and w.workspace_id = p_workspace_id
-    and w.is_active = true
-  group by w.id, w.opening_balance
-  for update of w;
-  if v_wallet_balance is null then
-    raise exception 'Wallet not found, inactive, or outside this workspace';
-  end if;
+  where w.id = p_wallet_id and w.workspace_id = p_workspace_id
+  group by w.id, w.opening_balance;
 
   select coalesce(sum(case when ga.kind = 'reserve' then ga.amount else -ga.amount end), 0)
     into v_goal_reserved
@@ -310,19 +314,23 @@ begin
     raise exception 'Only active goals can be spent';
   end if;
 
+  perform 1
+  from public.wallets w
+  where w.id = p_wallet_id
+    and w.workspace_id = p_workspace_id
+    and w.is_active = true
+  for update;
+  if not found then
+    raise exception 'Wallet not found, inactive, or outside this workspace';
+  end if;
+
   select w.id, w.opening_balance + coalesce(sum(le.signed_amount), 0)
     into v_wallet_id, v_wallet_balance
   from public.wallets w
   left join public.ledger_entries le
     on le.wallet_id = w.id and le.workspace_id = p_workspace_id
-  where w.id = p_wallet_id
-    and w.workspace_id = p_workspace_id
-    and w.is_active = true
-  group by w.id, w.opening_balance
-  for update of w;
-  if v_wallet_id is null then
-    raise exception 'Wallet not found, inactive, or outside this workspace';
-  end if;
+  where w.id = p_wallet_id and w.workspace_id = p_workspace_id
+  group by w.id, w.opening_balance;
   if p_amount > v_wallet_balance then
     raise exception 'Wallet balance is insufficient for this goal spending';
   end if;
