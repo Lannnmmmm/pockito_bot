@@ -203,6 +203,7 @@ declare
   v_investment public.investments%rowtype;
   v_wallet_id uuid;
   v_existing public.investment_movements%rowtype;
+  v_existing_tx public.transactions%rowtype;
   v_tx_id uuid;
   v_movement_id uuid;
   v_principal_reduction bigint;
