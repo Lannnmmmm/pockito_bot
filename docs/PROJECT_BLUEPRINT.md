@@ -264,6 +264,17 @@ Migration 0004 creates the planning, asset/liability, and recurring tables. Dire
 - Dedicated feature-aware reversal RPCs are still required before those payment records can be cancelled or reversed safely.
 - Migration 0008 is committed but has not been executed against Supabase or runtime-tested.
 
+
+### Feature-aware payment reversals (migration 0009)
+
+- `reverse_installment_payment` creates a compensating income transaction, marks all allocation rows belonging to the original installment payment as reversed, and retains those rows for audit history.
+- `reverse_debt_payment` creates the opposite income/expense transaction, marks the payment row reversed, and recomputes the debt status from the remaining active payments.
+- Both reversal operations are idempotent: repeating a request for the same original transaction returns the existing reversal transaction.
+- Migration 0009 adds reversal metadata to installment/debt payment rows and recreates the payment RPCs so reversed rows are excluded from outstanding-balance calculations.
+- The generic reversal RPC remains blocked for payment-source transactions; clients must call the matching feature-aware reversal RPC.
+- Reversed payments are not deleted. Their cash impact is compensated through a linked transaction and ledger entry.
+- Migration 0009 is committed but has not been executed against Supabase or runtime-tested.
+
 ## 13. Engineering guardrails
 
 - Keep SQL changes in versioned migration files; do not rely on manual dashboard-only schema edits.
