@@ -200,12 +200,9 @@ create policy "editors manage categories" on public.categories for all to authen
 
 -- Confirmed rule: all active members see all transactions in their Shared workspace.
 create policy "members read transactions" on public.transactions for select to authenticated using(public.is_workspace_member(workspace_id));
-create policy "editors manage transactions" on public.transactions for all to authenticated using(public.can_edit_workspace(workspace_id)) with check(public.can_edit_workspace(workspace_id));
 create policy "members read ledger" on public.ledger_entries for select to authenticated using(public.is_workspace_member(workspace_id));
-create policy "editors manage ledger" on public.ledger_entries for all to authenticated using(public.can_edit_workspace(workspace_id)) with check(public.can_edit_workspace(workspace_id));
 
 create policy "members read transfer groups" on public.transfer_groups for select to authenticated using(public.is_workspace_member(source_workspace_id) and public.is_workspace_member(destination_workspace_id));
-create policy "initiator creates transfer group" on public.transfer_groups for insert to authenticated with check(initiated_by=(select auth.uid()));
 
 create policy "members read workspace settings" on public.workspace_settings for select to authenticated using(public.is_workspace_member(workspace_id));
 create policy "owner admin manage settings" on public.workspace_settings for all to authenticated using(public.workspace_role_for(workspace_id) in ('owner','admin')) with check(public.workspace_role_for(workspace_id) in ('owner','admin'));
@@ -231,7 +228,9 @@ grant select,insert,update on public.profiles to authenticated;
 grant select,insert,update on public.workspaces to authenticated;
 grant select,insert,update,delete on public.workspace_members to authenticated;
 grant select,insert,update on public.workspace_invitations to authenticated;
-grant select,insert,update,delete on public.wallets,public.categories,public.transactions,public.ledger_entries to authenticated;
-grant select,insert on public.transfer_groups to authenticated;
+grant select,insert,update,delete on public.wallets,public.categories to authenticated;
+grant select on public.transactions,public.ledger_entries,public.transfer_groups to authenticated;
+-- Financial writes are intentionally reserved for validated SECURITY DEFINER RPCs.
+-- Do not grant direct client INSERT/UPDATE/DELETE on transactions, ledger_entries or transfer_groups.
 grant select,insert,update,delete on public.workspace_settings,public.user_preferences to authenticated;
 grant execute on function public.is_workspace_member(uuid),public.workspace_role_for(uuid),public.can_edit_workspace(uuid),public.is_workspace_owner(uuid) to authenticated;
