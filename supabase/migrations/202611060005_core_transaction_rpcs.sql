@@ -168,6 +168,10 @@ begin
     raise exception 'Only ordinary income/expense transactions can be reversed here';
   end if;
 
+  if v_original.reverses_transaction_id is not null then
+    raise exception 'A reversal transaction cannot itself be reversed';
+  end if;
+
   select t.id into v_existing_reversal
   from public.transactions t
   where t.workspace_id = p_workspace_id
