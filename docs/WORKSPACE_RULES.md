@@ -24,3 +24,12 @@ Updated: 2026-11-06
 - Direct browser writes to transactions, ledger entries, transfer groups, and workspace invitations are disabled in the initial migrations.
 - Financial writes must be exposed through validated atomic database RPCs. Invitation creation/acceptance must also use trusted RPC/server-side flows.
 - The first migrations are a schema foundation, not a deploy-ready application backend. Do not connect the frontend until RPCs, RLS tests, and migration execution are complete.
+
+## Goal allocation rules
+
+- Goal reserve/release operations are earmarks, not income or expenses; they do not create ledger entries or change wallet cash balance.
+- Every reserve is attributed to a wallet. Release and actual spending cannot exceed the reserved amount attributed to that same wallet.
+- Actual goal spending creates an expense transaction, a negative ledger entry, and a linked `spend` allocation in one atomic RPC.
+- Goal spending cannot use the generic transaction reversal path. A dedicated feature-aware reversal is required so the allocation and cash ledger remain consistent.
+- Migration 0010 adds `allocate_goal_funds` and `spend_goal_funds`; migration 0011 blocks generic reversal of `goal_spend` transactions.
+- Legacy behavior treated every goal deposit as an expense immediately. The new model deliberately corrects this: reserving money is not spending it. Only actual consumption is an expense.
