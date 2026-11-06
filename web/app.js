@@ -180,7 +180,7 @@
     bind();
     const {data:{session:current}}=await supabase.auth.getSession();
     if(current)await enterApp(current);else showAuth();
-    supabase.auth.onAuthStateChange((_event,newSession)=>{if(newSession)enterApp(newSession);else{session=null;user=null;showAuth();}});
+    supabase.auth.onAuthStateChange((_event,newSession)=>{if(newSession){setTimeout(()=>enterApp(newSession),0)}else{session=null;user=null;showAuth();}});
   }
   document.addEventListener("DOMContentLoaded",boot);
 })();
