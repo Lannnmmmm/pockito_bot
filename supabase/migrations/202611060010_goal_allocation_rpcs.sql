@@ -28,6 +28,10 @@ declare
   v_actor uuid := auth.uid();
   v_goal public.goals%rowtype;
   v_existing_id uuid;
+  v_existing_kind public.goal_allocation_kind;
+  v_existing_goal_id uuid;
+  v_existing_wallet_id uuid;
+  v_existing_amount bigint;
   v_wallet_id uuid;
   v_wallet_reserved bigint;
   v_allocation_id uuid;
@@ -53,11 +57,16 @@ begin
 
   perform pg_advisory_xact_lock(hashtextextended(p_workspace_id::text || ':goal:' || p_idempotency_key, 0));
 
-  select ga.id into v_existing_id
+  select ga.id, ga.kind, ga.goal_id, ga.wallet_id, ga.amount
+    into v_existing_id, v_existing_kind, v_existing_goal_id, v_existing_wallet_id, v_existing_amount
   from public.goal_allocations ga
   where ga.workspace_id = p_workspace_id
     and ga.idempotency_key = p_idempotency_key;
   if v_existing_id is not null then
+    if v_existing_kind <> p_kind or v_existing_goal_id <> p_goal_id
+       or v_existing_wallet_id <> p_wallet_id or v_existing_amount <> p_amount then
+      raise exception 'Idempotency key was already used with different allocation data';
+    end if;
     return v_existing_id;
   end if;
 
@@ -128,6 +137,10 @@ declare
   v_goal public.goals%rowtype;
   v_existing_id uuid;
   v_existing_transaction_id uuid;
+  v_existing_goal_id uuid;
+  v_existing_wallet_id uuid;
+  v_existing_amount bigint;
+  v_existing_kind public.goal_allocation_kind;
   v_wallet_id uuid;
   v_wallet_reserved bigint;
   v_category_type text;
@@ -152,12 +165,17 @@ begin
 
   perform pg_advisory_xact_lock(hashtextextended(p_workspace_id::text || ':goal:' || p_idempotency_key, 0));
 
-  select ga.id, ga.transaction_id
-    into v_existing_id, v_existing_transaction_id
+  select ga.id, ga.transaction_id, ga.goal_id, ga.wallet_id, ga.amount, ga.kind
+    into v_existing_id, v_existing_transaction_id, v_existing_goal_id, v_existing_wallet_id, v_existing_amount, v_existing_kind
   from public.goal_allocations ga
   where ga.workspace_id = p_workspace_id
     and ga.idempotency_key = p_idempotency_key;
   if v_existing_id is not null then
+    if v_existing_kind <> 'spend'::public.goal_allocation_kind
+       or v_existing_goal_id <> p_goal_id or v_existing_wallet_id <> p_wallet_id
+       or v_existing_amount <> p_amount or v_existing_transaction_id is null then
+      raise exception 'Idempotency key was already used with different goal spending data';
+    end if;
     return v_existing_transaction_id;
   end if;
 
