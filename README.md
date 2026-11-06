@@ -19,7 +19,7 @@ See [docs/PROJECT_BLUEPRINT.md](docs/PROJECT_BLUEPRINT.md) for confirmed decisio
 
 ## Development status
 
-The project is currently in the architecture and legacy-audit stage. The database schema and application code have not yet been finalized.
+The workspace database migrations 0001–0013 have been applied by the project owner to the separate Supabase project. A first web frontend is now available in `web/`; its core authentication, workspace switching, dashboard, wallet/category setup, and income/expense transaction flow are implemented. Advanced feature screens are scaffolded and will be wired module by module.
 
 ## Important
 
