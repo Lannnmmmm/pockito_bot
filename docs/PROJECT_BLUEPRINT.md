@@ -244,6 +244,18 @@ Migration 0004 creates the planning, asset/liability, and recurring tables. Dire
 - Transfer reversal is not implemented yet. Do not use the income/expense reversal RPC to reverse a transfer; a dedicated paired-transfer reversal operation is required.
 - Migration 0006 is committed but has not been executed against Supabase or runtime-tested.
 
+
+### Installment and debt payments (migration 0007)
+
+- `pay_installment_plan` creates one expense transaction for the cash payment and allocates it across the plan's installments in due-date / installment-number order.
+- Partial installment payments are split proportionally between the remaining principal and fee of the current installment. The integer rounding remainder is assigned to the fee; a fully paid installment receives its exact remaining principal and fee.
+- The payment cannot exceed the plan's outstanding total. The plan row and installment rows are locked during allocation to serialize concurrent payments.
+- `pay_debt` supports partial repayment and collection. A `payable` debt creates an expense; a `receivable` debt creates income. The payment cannot exceed the remaining principal, and the debt becomes `settled` when the final amount is paid.
+- Both functions create their transaction, feature-payment record(s), and ledger entry in one database transaction. They require workspace edit permission and an idempotency key.
+- Payment amounts are whole Rupiah BIGINT values. Installment fees are included in the cash expense total.
+- Important: payment-specific reversal is not implemented. The general income/expense reversal operation must not be used for installment/debt payment transactions until a dedicated reversal routine also restores the related payment allocation and debt/installment status.
+- Migration 0007 is committed but has not been executed against Supabase or runtime-tested.
+
 ## 13. Engineering guardrails
 
 - Keep SQL changes in versioned migration files; do not rely on manual dashboard-only schema edits.
