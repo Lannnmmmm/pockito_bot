@@ -43,6 +43,26 @@ Catatan pengujian manual aplikasi Pockito. Hanya pengujian yang telah dikonfirma
 
 **Kesimpulan:** pencatatan pemasukan dan persistensi saldo setelah refresh berhasil pada skenario pengujian ini.
 
+## 2026-11-06 — Pengujian isolasi saldo antar-wallet
+
+**Status: LULUS**
+
+### Skenario
+1. Membuat wallet `Seabank Testing` dengan saldo awal Rp0.
+2. Memastikan saldo wallet `BRI Testing` tetap Rp135.000.
+3. Mencatat pemasukan Rp20.000 ke `Seabank Testing`.
+4. Memeriksa saldo kedua wallet dan total saldo.
+5. Me-refresh halaman dan memastikan saldo tetap konsisten.
+
+### Hasil yang dikonfirmasi
+| Pemeriksaan | Hasil |
+|---|---:|
+| BRI Testing | Rp135.000 |
+| Seabank Testing | Rp20.000 |
+| Total kedua wallet | Rp155.000 |
+
+**Kesimpulan:** saldo antar-wallet terpisah dan pencatatan pada Seabank tidak mengubah saldo BRI pada skenario pengujian ini.
+
 ### Catatan cakupan
 Pengujian ini belum membuktikan seluruh skenario ledger, transfer antar-wallet, pembatalan/reversal transaksi, transaksi bersamaan, atau fitur keuangan lainnya. Fitur-fitur tersebut perlu diuji terpisah.
 
