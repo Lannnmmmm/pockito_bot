@@ -256,6 +256,14 @@ Migration 0004 creates the planning, asset/liability, and recurring tables. Dire
 - Important: payment-specific reversal is not implemented. The general income/expense reversal operation must not be used for installment/debt payment transactions until a dedicated reversal routine also restores the related payment allocation and debt/installment status.
 - Migration 0007 is committed but has not been executed against Supabase or runtime-tested.
 
+
+### Payment reversal safety guard (migration 0008)
+
+- The general `reverse_financial_transaction` RPC now rejects transactions whose source is `installment_payment` or `debt_payment`.
+- This prevents a cash-ledger reversal from leaving installment allocations or debt balances falsely marked as paid.
+- Dedicated feature-aware reversal RPCs are still required before those payment records can be cancelled or reversed safely.
+- Migration 0008 is committed but has not been executed against Supabase or runtime-tested.
+
 ## 13. Engineering guardrails
 
 - Keep SQL changes in versioned migration files; do not rely on manual dashboard-only schema edits.
