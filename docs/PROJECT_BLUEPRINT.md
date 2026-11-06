@@ -222,6 +222,16 @@ The advanced-feature schema is based on the legacy Apps Script sheet headers and
 
 Migration 0004 creates the planning, asset/liability, and recurring tables. Direct client writes are not granted; write operations still need atomic RPCs and tests.
 
+
+### Core transaction RPCs (migration 0005)
+
+- `post_financial_transaction` posts only ordinary income/expense. It validates the authenticated actor, workspace role, active wallet, category scope/type, positive BIGINT amount, timestamp, title, and mandatory idempotency key. The transaction and signed ledger entry are written in one database transaction.
+- Repeating the same workspace/idempotency key returns the original transaction ID rather than creating a duplicate.
+- `reverse_financial_transaction` creates a compensating transaction and opposite ledger entry, then marks the original as reversed. It does not delete or overwrite the financial event. Repeating a reversal request returns the already-created reversal ID.
+- For operational income/expense reports, exclude both rows where `reversed_at is not null` and rows where `reverses_transaction_id is not null`. For wallet balances, sum all ledger entries; the compensating entry cancels the original movement.
+- These RPCs do not implement wallet transfers, asset movements, installment/debt payments, or goal/investment allocations. Those require dedicated atomic operations and remain future work.
+- Migration 0005 is committed but has not been executed against a Supabase project or runtime-tested.
+
 ## 13. Engineering guardrails
 
 - Keep SQL changes in versioned migration files; do not rely on manual dashboard-only schema edits.
