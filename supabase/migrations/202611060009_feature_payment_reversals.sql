@@ -26,12 +26,6 @@ alter table public.debt_payments
 -- Pockito / Supabase migration 0007
 -- Atomic installment and debt payments with linked ledger transactions.
 
-create unique index installment_payments_once_per_installment_tx_idx
-  on public.installment_payments(workspace_id, installment_id, transaction_id);
-
-create unique index debt_payments_transaction_once_idx
-  on public.debt_payments(workspace_id, transaction_id);
-
 create or replace function public.pay_installment_plan(
   p_workspace_id uuid,
   p_plan_id uuid,
