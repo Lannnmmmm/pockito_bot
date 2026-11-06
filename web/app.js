@@ -97,10 +97,10 @@
     return '<div class="page-toolbar"><input class="search-input" id="tx-search" placeholder="Cari transaksi..." /><button class="btn primary" data-open="transaction-dialog">＋ Transaksi</button></div><div class="table-wrap"><table><thead><tr><th>TANGGAL</th><th>TRANSAKSI</th><th>KATEGORI</th><th>DOMPET</th><th>JENIS</th><th>NOMINAL</th></tr></thead><tbody id="transactions-body">'+transactions.map(t=>transactionTableRow(t)).join("")+'</tbody></table></div>';
   }
   function transactionTableRow(t){
-    const inc=t.kind==="income";return '<tr><td>'+dateFmt(t.occurred_at)+'</td><td><strong>'+escapeHtml(t.title)+'</strong>'+(t.reversed_at?'<div class="tiny muted">Dibatalkan</div>':"")+'</td><td>'+escapeHtml(categories.find(c=>c.id===t.category_id)?.name||"—")+'</td><td>'+escapeHtml(wallets.find(w=>w.id===t.wallet_id)?.name||"—")+'</td><td><span class="pill '+(inc?"income":"expense")+'">'+(inc?"Pemasukan":"Pengeluaran")+'</span></td><td class="'+(inc?"positive":"negative")+'">'+(inc?"+":"−")+money(t.amount)+'</td></tr>';
+    const transfer=t.kind==="transfer_in"||t.kind==="transfer_out";const inc=t.kind==="income"||t.kind==="asset_in"||t.kind==="transfer_in";const label=transfer?"Transfer":(inc?"Pemasukan":"Pengeluaran");return '<tr><td>'+dateFmt(t.occurred_at)+'</td><td><strong>'+escapeHtml(t.title)+'</strong>'+(t.reversed_at?'<div class="tiny muted">Dibatalkan</div>':"")+'</td><td>'+escapeHtml(categories.find(c=>c.id===t.category_id)?.name||"—")+'</td><td>'+escapeHtml(wallets.find(w=>w.id===t.wallet_id)?.name||"—")+'</td><td><span class="pill '+(transfer?"transfer":inc?"income":"expense")+'">'+label+'</span></td><td class="'+(transfer?"transfer-text":inc?"positive":"negative")+'">'+(t.kind==="transfer_out"?"−":inc?"+":"−")+money(t.amount)+'</td></tr>';
   }
   function renderWallets(){
-    return '<div class="page-toolbar"><div class="muted">Saldo dihitung dari saldo awal + seluruh ledger, bukan angka manual.</div><button class="btn primary" data-open="wallet-dialog">＋ Tambah dompet</button></div><div class="card-grid">'+(wallets.length?wallets.map(w=>'<article class="wallet-card"><div class="wallet-info"><div class="wallet-icon">▣</div><div><strong>'+escapeHtml(w.name)+'</strong><small>'+escapeHtml(w.wallet_type)+'</small></div></div><div class="wallet-balance">'+money(w.balance)+'</div><small>'+escapeHtml(w.account_label||"")+'</small></article>').join(""):'<div class="panel empty">Belum ada dompet.</div>')+'</div>';
+    return '<div class="page-toolbar"><div class="muted">Saldo dihitung dari saldo awal + seluruh ledger, bukan angka manual.</div><div class="toolbar-actions"><button class="btn ghost" data-action="transfer">⇄ Transfer</button><button class="btn primary" data-open="wallet-dialog">＋ Tambah dompet</button></div></div><div class="card-grid">'+(wallets.length?wallets.map(w=>'<article class="wallet-card"><div class="wallet-info"><div class="wallet-icon">▣</div><div><strong>'+escapeHtml(w.name)+'</strong><small>'+escapeHtml(w.wallet_type)+'</small></div></div><div class="wallet-balance">'+money(w.balance)+'</div><small>'+escapeHtml(w.account_label||"")+'</small></article>').join(""):'<div class="panel empty">Belum ada dompet.</div>')+'</div>';
   }
   function renderCategories(){
     return '<div class="page-toolbar"><div class="muted">Kategori membantu mengelompokkan arus kas.</div><button class="btn primary" data-open="category-dialog">＋ Tambah kategori</button></div><div class="table-wrap"><table><thead><tr><th>NAMA</th><th>JENIS</th><th>SUMBER</th></tr></thead><tbody>'+categories.map(c=>'<tr><td><strong>'+escapeHtml(c.name)+'</strong></td><td>'+escapeHtml(c.category_type)+'</td><td>'+(c.is_system?"Sistem":"Kustom")+'</td></tr>').join("")+'</tbody></table></div>';
@@ -141,6 +141,35 @@
     try{await call(supabase.rpc("post_financial_transaction",args));$("#transaction-dialog").close();$("#transaction-form").reset();await refreshData();toast("Transaksi berhasil disimpan.");}
     catch(e){fail(e)}finally{btn.disabled=false}
   }
+  function openTransfer(){
+    if(!canEdit())return toast("Akses workspace kamu hanya bisa melihat data.",true);
+    if(wallets.length<2)return toast("Tambahkan minimal dua dompet untuk melakukan transfer.",true);
+    const options=wallets.map(w=>'<option value="'+w.id+'">'+escapeHtml(w.name)+' · '+money(w.balance)+'</option>').join("");
+    $("#transfer-source").innerHTML=options;
+    $("#transfer-destination").innerHTML=options;
+    if(wallets[1])$("#transfer-destination").value=wallets[1].id;
+    $("#transfer-date").value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+    updateTransferHint();
+    $("#transfer-dialog").showModal();
+  }
+  function updateTransferHint(){
+    const source=wallets.find(w=>w.id===$("#transfer-source").value);
+    const destination=wallets.find(w=>w.id===$("#transfer-destination").value);
+    $("#transfer-balance-hint").textContent=(source?"Saldo sumber: "+money(source.balance):"Pilih dompet sumber.")+(destination?" · Saldo tujuan: "+money(destination.balance):"");
+  }
+  async function saveTransfer(e){
+    e.preventDefault();if(!canEdit())return;
+    const sourceId=$("#transfer-source").value,destinationId=$("#transfer-destination").value;
+    const amount=Number($("#transfer-amount").value);
+    const source=wallets.find(w=>w.id===sourceId);
+    if(!sourceId||!destinationId||sourceId===destinationId)return toast("Pilih dua dompet yang berbeda.",true);
+    if(!Number.isSafeInteger(amount)||amount<=0)return toast("Nominal harus berupa Rupiah bulat lebih dari nol.",true);
+    if(source&&amount>source.balance)return toast("Saldo dompet sumber tidak mencukupi.",true);
+    const args={p_workspace_id:activeWorkspace.id,p_source_wallet_id:sourceId,p_destination_wallet_id:destinationId,p_amount:amount,p_occurred_at:new Date($("#transfer-date").value).toISOString(),p_title:$("#transfer-title").value.trim(),p_notes:$("#transfer-notes").value.trim()||null,p_idempotency_key:key()};
+    const btn=$("#transfer-submit");btn.disabled=true;
+    try{await call(supabase.rpc("post_wallet_transfer",args));$("#transfer-dialog").close();$("#transfer-form").reset();await refreshData();toast("Transfer berhasil dicatat.");}
+    catch(e){fail(e)}finally{btn.disabled=false}
+  }
   async function saveWallet(e){
     e.preventDefault();if(!canEdit())return;
     const name=$("#wallet-name").value.trim(), opening=Number($("#wallet-opening").value||0);
@@ -168,7 +197,7 @@
     $("#workspace-select").addEventListener("change",async()=>{try{await loadWorkspace()}catch(e){fail(e)}});
     $("#quick-add").addEventListener("click",openTransaction);
     $("#page-content").addEventListener("click",e=>{const open=e.target.closest("[data-open]");if(open){if(open.dataset.open==="transaction-dialog")openTransaction();else if(canEdit())$("#"+open.dataset.open).showModal();else toast("Kamu memiliki akses baca saja.",true);return;}const goto=e.target.closest("[data-goto]");if(goto){page=goto.dataset.goto;renderPage();}});
-    $("#transaction-form").addEventListener("submit",saveTransaction);$("#wallet-form").addEventListener("submit",saveWallet);$("#category-form").addEventListener("submit",saveCategory);
+    $("#transaction-form").addEventListener("submit",saveTransaction);$("#wallet-form").addEventListener("submit",saveWallet);$("#category-form").addEventListener("submit",saveCategory);$("#transfer-form").addEventListener("submit",saveTransfer);$("#transfer-source").addEventListener("change",updateTransferHint);$("#transfer-destination").addEventListener("change",updateTransferHint);$("#page-content").addEventListener("click",e=>{if(e.target.closest("[data-action=transfer]"))openTransfer();});
     $$(".segmented [data-kind]").forEach(b=>b.addEventListener("click",()=>{txKind=b.dataset.kind;$$(".segmented [data-kind]").forEach(x=>x.classList.toggle("active",x===b));fillCategories();}));
     $$("[data-close]").forEach(b=>b.addEventListener("click",()=>$("#"+b.dataset.close).close()));
     $("#signout-btn").addEventListener("click",()=>supabase.auth.signOut());
