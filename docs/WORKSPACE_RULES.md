@@ -45,3 +45,15 @@ Updated: 2026-11-06
 - Generic transaction reversal is blocked for investment contributions. Withdrawals use the `asset_in` transaction kind and are not eligible for the generic income/expense reversal path. A dedicated investment reversal flow is required before supporting reversal from the UI.
 - Investment metadata and movement writes are exposed through SECURITY DEFINER RPCs; clients retain read-only table access.
 - Migration 0012 adds `save_investment`, `record_investment_contribution`, `record_investment_withdrawal`, `record_investment_valuation`, and `close_investment`.
+
+## Recurring transaction rules
+
+- A recurring schedule is a monthly income/expense template. The configured day is clamped to the last valid day of shorter months (for example, day 31 becomes the final day of February).
+- `save_recurring_transaction` creates or updates schedule metadata; `set_recurring_transaction_active` pauses or resumes it.
+- `execute_recurring_transaction` posts exactly one due period as a real transaction and ledger entry in one atomic database operation.
+- Each schedule/period pair is unique. Retrying the same period returns the original transaction rather than posting twice.
+- Execution uses the workspace timezone and records the transaction at 12:00 local time on the scheduled date.
+- The RPC accepts only the first day of a month as its period key. The caller must process missed periods in chronological order; periods at or before `last_processed_period` are rejected unless that period was already executed.
+- This migration does not install a cron job, Edge Function, or other background scheduler. The app must call the execution RPC when it checks due schedules. Truly automatic execution while nobody opens the app requires a separate trusted scheduler.
+- Direct browser writes remain disabled; schedule management and execution go through SECURITY DEFINER RPCs.
+- Migration 0013 adds the recurring schedule management and execution RPCs.
