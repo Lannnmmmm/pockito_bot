@@ -179,7 +179,7 @@ The schema may be normalized differently after the detailed legacy audit. Avoid 
 
 1. Complete legacy feature and data-flow audit.
 2. Finalize product rules and database schema.
-3. Add versioned Supabase SQL migrations, constraints, indexes, and RLS tests.
+3. Add versioned Supabase SQL migrations, constraints, indexes, and RLS tests. (Initial workspace/ledger migrations committed; SQL still requires execution and policy tests.)
 4. Implement Supabase Auth and automatic Personal workspace provisioning.
 5. Implement Shared workspace creation, invitations, membership, and roles.
 6. Implement wallets, categories, transactions, ledger, and atomic transfers.
@@ -194,9 +194,6 @@ The schema may be normalized differently after the detailed legacy audit. Avoid 
 
 These are deliberately not treated as confirmed until the product owner decides:
 
-- Whether every Shared member can see every transaction in that workspace, or whether transaction-level visibility is supported.
-- Whether only the Owner or both Owner and Admin can invite members.
-- Whether invitations are email-only, link-only, or support both.
 - Exact role permission matrix, including who can delete or reverse financial records.
 - Whether Shared workspaces support multiple owners or exactly one owner.
 - Whether a transfer can be initiated from a workspace when the actor has different roles in the source and destination workspaces.
@@ -204,7 +201,15 @@ These are deliberately not treated as confirmed until the product owner decides:
 - Whether currency conversion/multi-currency is in scope; initial currency is IDR unless later changed.
 - Exact notification channels and scheduling mechanism.
 
-## 11. Engineering guardrails
+## 11. Confirmed workspace rules
+
+- Every active Shared workspace member can read every transaction in that workspace.
+- Only the Owner may invite members; Admin cannot invite.
+- Invitations are email-only. Email delivery is handled by a trusted server-side function, not PostgreSQL itself.
+- Personal workspace data remains private from all other users.
+- See [WORKSPACE_RULES.md](WORKSPACE_RULES.md) for implementation details.
+
+## 12. Engineering guardrails
 
 - Keep SQL changes in versioned migration files; do not rely on manual dashboard-only schema edits.
 - Never rewrite or replace the legacy UI before comparing the result against the reference.
