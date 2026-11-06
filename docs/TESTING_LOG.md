@@ -23,6 +23,26 @@ Catatan pengujian manual aplikasi Pockito. Hanya pengujian yang telah dikonfirma
 
 **Kesimpulan:** pencatatan transaksi dasar dan persistensi saldo setelah refresh berhasil pada skenario pengujian ini.
 
+## 2026-11-06 — Pengujian transaksi pemasukan dan persistensi saldo
+
+**Status: LULUS**
+
+### Skenario
+1. Menggunakan wallet `BRI Testing` dengan saldo terakhir Rp85.000.
+2. Mencatat pemasukan `Tes gaji` sebesar Rp50.000.
+3. Memeriksa saldo setelah transaksi.
+4. Me-refresh halaman dan memeriksa saldo kembali.
+
+### Hasil yang dikonfirmasi
+| Pemeriksaan | Hasil |
+|---|---:|
+| Saldo sebelum pemasukan | Rp85.000 |
+| Pemasukan | Rp50.000 |
+| Saldo setelah pemasukan | Rp135.000 |
+| Saldo setelah refresh dan pemuatan ulang data | Rp135.000 — tetap konsisten |
+
+**Kesimpulan:** pencatatan pemasukan dan persistensi saldo setelah refresh berhasil pada skenario pengujian ini.
+
 ### Catatan cakupan
 Pengujian ini belum membuktikan seluruh skenario ledger, transfer antar-wallet, pembatalan/reversal transaksi, transaksi bersamaan, atau fitur keuangan lainnya. Fitur-fitur tersebut perlu diuji terpisah.
 
