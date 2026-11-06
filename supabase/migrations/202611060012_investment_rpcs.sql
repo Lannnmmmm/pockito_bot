@@ -96,6 +96,7 @@ declare
   v_investment public.investments%rowtype;
   v_wallet_id uuid;
   v_existing public.investment_movements%rowtype;
+  v_existing_tx public.transactions%rowtype;
   v_tx_id uuid;
   v_movement_id uuid;
   v_key text;
@@ -125,6 +126,14 @@ begin
        or v_existing.amount <> p_amount
        or v_existing.transaction_id is null then
       raise exception 'Idempotency key was already used with different investment data';
+    end if;
+    select t.* into v_existing_tx
+    from public.transactions t
+    where t.id = v_existing.transaction_id and t.workspace_id = p_workspace_id;
+    if not found or v_existing_tx.wallet_id <> p_wallet_id
+       or v_existing_tx.occurred_at <> p_occurred_at
+       or coalesce(v_existing_tx.notes, '') <> coalesce(nullif(trim(coalesce(p_notes, '')), ''), '') then
+      raise exception 'Idempotency key was already used with different contribution details';
     end if;
     return v_existing.transaction_id;
   end if;
@@ -224,6 +233,14 @@ begin
        or v_existing.amount <> p_amount
        or v_existing.transaction_id is null then
       raise exception 'Idempotency key was already used with different investment data';
+    end if;
+    select t.* into v_existing_tx
+    from public.transactions t
+    where t.id = v_existing.transaction_id and t.workspace_id = p_workspace_id;
+    if not found or v_existing_tx.wallet_id <> p_wallet_id
+       or v_existing_tx.occurred_at <> p_occurred_at
+       or coalesce(v_existing_tx.notes, '') <> coalesce(nullif(trim(coalesce(p_notes, '')), ''), '') then
+      raise exception 'Idempotency key was already used with different withdrawal details';
     end if;
     return v_existing.transaction_id;
   end if;
