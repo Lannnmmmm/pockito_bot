@@ -130,7 +130,7 @@ This is a logical domain map, not yet a final SQL schema. Column definitions, co
 
 ### Assets and liabilities
 - `investments`
-- `investment_valuations`
+- `investment_movements` (contributions, withdrawals, and valuations)
 - `credit_cards`
 - `installment_plans`
 - `installments`
@@ -209,7 +209,20 @@ These are deliberately not treated as confirmed until the product owner decides:
 - Personal workspace data remains private from all other users.
 - See [WORKSPACE_RULES.md](WORKSPACE_RULES.md) for implementation details.
 
-## 12. Engineering guardrails
+## 12. Legacy feature mapping notes
+
+The advanced-feature schema is based on the legacy Apps Script sheet headers and code paths:
+
+- `Anggaran`: monthly category quota and alert threshold; actual spend should be calculated from expense transactions, not stored as a mutable counter.
+- `Target`: target amount, deadline, and notes. Deposits become `goal_allocations` with reserve/release semantics, not automatic expense transactions. Actual goal spending links to a real expense transaction.
+- `Investasi`: instrument name/type, principal, current value, and description. Contributions/withdrawals link to wallet transactions; valuations are recorded separately from cash movement.
+- `Kartu` and `Cicilan`: credit limit, due day, installment plan, schedule rows, principal, fees, and partial payment allocations. The legacy behavior allocates partial payments oldest-due-first and proportionally splits principal/fee.
+- `Hutang`: payable/receivable direction, original principal, opened date, due date, and payment history. Outstanding balance is derived from payments.
+- `Berulang`: monthly day-of-month schedule. `recurring_executions` has a unique recurring-item/period pair to make processing idempotent.
+
+Migration 0004 creates the planning, asset/liability, and recurring tables. Direct client writes are not granted; write operations still need atomic RPCs and tests.
+
+## 13. Engineering guardrails
 
 - Keep SQL changes in versioned migration files; do not rely on manual dashboard-only schema edits.
 - Never rewrite or replace the legacy UI before comparing the result against the reference.
