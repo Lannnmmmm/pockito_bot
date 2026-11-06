@@ -76,8 +76,12 @@
   function txRows(items){
     if(!items.length)return '<div class="empty"><div class="empty-icon">◌</div>Belum ada transaksi. Catat transaksi pertamamu.</div>';
     return '<div class="tx-list">'+items.map(t=>{
-      const inc=t.kind==="income"||t.kind==="asset_in"; const wallet=wallets.find(w=>w.id===t.wallet_id); const cat=categories.find(c=>c.id===t.category_id);
-      return '<div class="tx-row"><div class="tx-icon '+(inc?"income":"expense")+'">'+(inc?"↙":"↗")+'</div><div class="tx-main"><strong>'+escapeHtml(t.title)+'</strong><small>'+escapeHtml(cat?.name||t.source||"Transaksi")+' · '+escapeHtml(wallet?.name||"Dompet")+' · '+dateFmt(t.occurred_at)+(t.reversed_at?" · Dibatalkan":"")+'</small></div><div class="tx-amount '+(inc?"positive":"negative")+'">'+(inc?"+":"−")+money(t.amount)+'</div></div>';
+      const transfer=t.kind==="transfer_in"||t.kind==="transfer_out";
+      const inc=t.kind==="income"||t.kind==="asset_in"||t.kind==="transfer_in";
+      const wallet=wallets.find(w=>w.id===t.wallet_id); const cat=categories.find(c=>c.id===t.category_id);
+      const amountClass=transfer?"transfer-text":inc?"positive":"negative";
+      const iconClass=transfer?"transfer":inc?"income":"expense";
+      return '<div class="tx-row"><div class="tx-icon '+iconClass+'">'+(transfer?"⇄":inc?"↙":"↗")+'</div><div class="tx-main"><strong>'+escapeHtml(t.title)+'</strong><small>'+escapeHtml(cat?.name||t.source||"Transaksi")+' · '+escapeHtml(wallet?.name||"Dompet")+' · '+dateFmt(t.occurred_at)+(t.reversed_at?" · Dibatalkan":"")+'</small></div><div class="tx-amount '+amountClass+'">'+(t.kind==="transfer_out"?"−":inc?"+":"−")+money(t.amount)+'</div></div>';
     }).join("")+'</div>';
   }
   function renderOverview(){
